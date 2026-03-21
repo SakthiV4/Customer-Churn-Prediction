@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Processing | ChurnSight AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-card: #181b21;
+            --bg-input: #0a0b0d;
+            --border: #2a2e36;
+            --border-focus: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --error: #ef4444;
+            --warning: #f97316;
+            --success: #22c55e;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        main {
+            flex: 1;
+            padding: 3rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            text-align: center;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-md);
+            padding: 4rem 2rem;
+            margin-top: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(10, 11, 13, 0.5);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .drop-icon {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            width: 48px;
+            height: 48px;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: var(--radius-md);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Table */
+        .results-section {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .bg-red {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .bg-orange {
+            background: rgba(249, 115, 22, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .bg-green {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <i data-lucide="brain-circuit" style="color: var(--accent)"></i>
+            ChurnSight AI // Batch
+        </div>
+        <a href="index.html" class="nav-link"><i data-lucide="arrow-left"></i> Back to Single Dashboard</a>
+    </header>
+
+    <main>
+        <div class="card" id="upload-card">
+            <h2><i data-lucide="folder-open"
+                    style="display:inline; vertical-align:middle; margin-right:8px; color: var(--accent)"></i>
+                Enterprise Batch Processor</h2>
+            <p style="color: var(--text-muted); margin-top: 8px; font-size: 0.95rem;">Upload a CSV containing thousands
+                of customer records to instantly identify revenue at risk.</p>
+
+            <div class="drop-zone" id="drop-zone">
+                <i data-lucide="upload-cloud" class="drop-icon"></i>
+                <h3 style="margin-bottom: 8px;">Drag & Drop CSV File</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Must contain standard IBM Telco columns</p>
+                <input type="file" id="file-input" accept=".csv" style="display: none;">
+                <button class="btn"
+                    style="background: var(--bg-input); border: 1px solid var(--border); margin-top: 2rem;"
+                    onclick="document.getElementById('file-input').click()">
+                    Browse Files
+                </button>
+            </div>
+
+            <button class="btn" id="upload-btn"
+                style="display: none; width: 100%; justify-content: center; margin-top: 2rem;">
+                <i data-lucide="cpu"></i> Process Batch
+            </button>
+        </div>
+
+        <div class="results-section" id="results-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2><i data-lucide="alert-circle"
+                        style="display:inline; vertical-align:middle; margin-right:8px; color: var(--error)"></i>
+                    Highest Risk Customers</h2>
+                <div style="color: var(--text-muted); font-size: 0.9rem;" id="stats-text">Processed X records. Found Y
+                    at risk.</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer ID</th>
+                        <th>Churn Probability</th>
+                        <th>Risk Level</th>
+                        <th>AI Prediction</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Rows injected here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadCard = document.getElementById('upload-card');
+        const resultsSection = document.getElementById('results-section');
+        const tableBody = document.getElementById('table-body');
+        const statsText = document.getElementById('stats-text');
+
+        let selectedFile = null;
+
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+        const API_BASE = isLocalhost ? 'http://localhost:8000' : '';
+
+        // Drag events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+            dropZone.addEventListener(e, preventDefaults, false);
+        });
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        function handleFile(file) {
+            if (file && file.name.endsWith('.csv')) {
+                selectedFile = file;
+                dropZone.innerHTML = `<i data-lucide="file-text" style="color: var(--success); width: 48px; height: 48px; margin-bottom: 1rem;"></i>
+                                      <h3 style="color: var(--success)">${file.name}</h3>
+                                      <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">Ready to process</p>`;
+                lucide.createIcons();
+                uploadBtn.style.display = 'flex';
+            } else {
+                alert("Please upload a valid CSV file.");
+            }
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            uploadBtn.innerHTML = `<i data-lucide="loader-2" style="animation: spin 1s linear infinite"></i> Processing Data...`;
+            uploadBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/predict/batch`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error("Batch processing failed.");
+
+                const data = await res.json();
+
+                // Construct Table
+                tableBody.innerHTML = '';
+                data.data.forEach(row => {
+                    let badgeClass = row.risk === 'High' ? 'bg-red' : row.risk === 'Medium' ? 'bg-orange' : 'bg-green';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-family: monospace; color: var(--text-muted)">#${row.id}</td>
+                        <td style="font-weight: 600;">${(row.probability * 100).toFixed(1)}%</td>
+                        <td><span class="badge ${badgeClass}">${row.risk}</span></td>
+                        <td>${row.prediction}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                uploadCard.style.display = 'none';
+                resultsSection.style.display = 'block';
+                statsText.innerHTML = `Processed <strong>${data.total_processed}</strong> records. Flagged <strong style="color: var(--error)">${data.high_risk_count}</strong> high-risk customers.`;
+
+            } catch (err) {
+                alert(err.message);
+                uploadBtn.innerHTML = `<i data-lucide="cpu"></i> Process Batch`;
+                uploadBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
