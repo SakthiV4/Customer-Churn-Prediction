@@ -1,16 +1,23 @@
 import os
+import io
 import sys
 import joblib
+import logging
 import pandas as pd
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List
+
+# ── Logging Setup ─────────────────────────────────────────────────────
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load .env file when running locally (ignored on Vercel, uses env vars directly)
 try:
@@ -26,19 +33,32 @@ COLS_PATH = os.path.join(BASE_DIR, "models", "feature_columns.pkl")
 CLV_MODEL_PATH = os.path.join(BASE_DIR, "models", "clv_pipeline.pkl")
 
 # ── Global State ──────────────────────────────────────────────────────
+# ── Startup / Shutdown Lifespan ───────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_model()
+    yield
+    # Cleanup on shutdown (if needed)
+
 app = FastAPI(
     title="RetentionLens AI - Action Platform",
     description="Advanced API with Churn Prediction, Feature Impact, CSV Batching, and AI Strategy Generation.",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
-# Allow CORS for local dev & Vercel
+# Allow CORS — enumerate explicit origins, not wildcard
+ALLOWED_ORIGINS = [
+    os.environ.get("FRONTEND_URL", "http://localhost:8000"),
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Serve Frontend static files
@@ -48,33 +68,41 @@ if os.path.exists(FRONTEND_DIR):
 
 pipeline = None
 clv_pipeline = None
-best_thresh = 0.47  
+best_thresh = 0.47
+expected_cols = None  # Cached globally — loaded once at startup
 
 # ── Load Model on Startup ─────────────────────────────────────────────
-@app.on_event("startup")
 def load_model():
-    global pipeline, best_thresh, clv_pipeline
+    global pipeline, best_thresh, clv_pipeline, expected_cols
     if not os.path.exists(MODEL_PATH):
-        print(f"ERROR: Model file not found at {MODEL_PATH}")
+        logger.error(f"Model file not found at {MODEL_PATH}")
         return
     try:
         artifact = joblib.load(MODEL_PATH)
         pipeline = artifact["pipeline"]
         best_thresh = artifact.get("threshold", 0.47)
-        print(f"✅ Model loaded successfully (Threshold={best_thresh:.2f})")
+        logger.info(f"✅ Model loaded successfully (Threshold={best_thresh:.2f})")
     except Exception as e:
-        print(f"❌ Failed to load model: {str(e)}")
-    
+        logger.error("Failed to load churn model", exc_info=True)
+
+    # Cache feature columns once at startup (not on every request)
+    try:
+        if os.path.exists(COLS_PATH):
+            expected_cols = joblib.load(COLS_PATH)
+            logger.info(f"✅ Feature columns loaded ({len(expected_cols)} columns)")
+    except Exception as e:
+        logger.warning("Could not load feature_columns.pkl", exc_info=True)
+
     # Load CLV model separately — safe, isolated, optional
     try:
         if os.path.exists(CLV_MODEL_PATH):
             clv_artifact = joblib.load(CLV_MODEL_PATH)
             clv_pipeline = clv_artifact["pipeline"]
-            print(f"✅ CLV model loaded (avg CLV=${clv_artifact.get('avg_clv', 0):.0f})")
+            logger.info(f"✅ CLV model loaded (avg CLV=${clv_artifact.get('avg_clv', 0):.0f})")
         else:
-            print("ℹ️  CLV model not found — CLV feature will be skipped.")
+            logger.info("CLV model not found — CLV feature will be skipped.")
     except Exception as e:
-        print(f"⚠️  CLV model load failed (non-critical): {str(e)}")
+        logger.warning("CLV model load failed (non-critical)", exc_info=True)
 
 # ── Pydantic Request Schema ───────────────────────────────────────────
 class CustomerData(BaseModel):
@@ -100,9 +128,9 @@ class CustomerData(BaseModel):
 
 
 class EmailRequest(BaseModel):
-    recipient_email: str = Field(..., example="customer@example.com")
-    subject: str = Field(..., example="We value your partnership!")
-    body: str = Field(..., example="Hi, we have a special offer for you...")
+    recipient_email: EmailStr = Field(..., example="customer@example.com")  # RFC 5322 validated
+    subject: str = Field(..., max_length=200, example="We value your partnership!")
+    body: str = Field(..., max_length=10_000, example="Hi, we have a special offer for you...")
 
 
 # ── Feature Engineering Logic ─────────────────────────────────────────
@@ -161,15 +189,15 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["high_charges"] = (df["MonthlyCharges"] > 89.85).astype(int)
     df["new_customer"] = (df["tenure"] <= 12).astype(int)
 
-    # 8. Align columns
-    try:
-        expected_cols = joblib.load(COLS_PATH)
+    # 8. Align columns — use globally cached expected_cols loaded once at startup
+    global expected_cols
+    if expected_cols is not None:
         for col in expected_cols:
             if col not in df.columns:
                 df[col] = 0
         df = df[expected_cols]
-    except Exception as e:
-        print(f"Warning: feature_columns.pkl not found. {e}")
+    else:
+        logger.warning("expected_cols not loaded — column alignment skipped")
         
     bool_cols = df.select_dtypes(include=["bool"]).columns
     df[bool_cols] = df[bool_cols].astype(int)
@@ -342,25 +370,35 @@ def predict_churn(data: CustomerData):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        logger.error("Prediction request failed", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred. Please try again.")
 
 @app.post("/api/predict/batch")
 async def predict_churn_batch(file: UploadFile = File(...)):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Model is not loaded.")
-        
+
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed.")
-        
+
+    # Guard against oversized uploads (DoS protection)
+    MAX_BYTES = 5 * 1024 * 1024  # 5 MB
+    content = await file.read(MAX_BYTES + 1)
+    if len(content) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File too large. Maximum allowed size is 5 MB.")
+
     try:
-        df = pd.read_csv(file.file)
-        
+        df = pd.read_csv(io.BytesIO(content))
+
+        if len(df) > 5000:
+            raise HTTPException(status_code=400, detail="Too many rows. Maximum allowed is 5,000 rows per batch.")
+
         # Keep original indices/IDs if present
         customer_ids = df.get('customerID', df.index)
-        
+
         X = engineer_features(df)
         probs = pipeline.predict_proba(X)[:, 1]
-        
+
         results = []
         for i, prob in enumerate(probs):
             will_churn = prob >= best_thresh
@@ -370,17 +408,20 @@ async def predict_churn_batch(file: UploadFile = File(...)):
                 "prediction": "Churn" if will_churn else "Retain",
                 "risk": "High" if prob >= 0.70 else "Medium" if prob >= best_thresh else "Low"
             })
-            
+
         # Sort by highest risk first
         results = sorted(results, key=lambda x: x["probability"], reverse=True)
-        
+
         return {
             "total_processed": len(results),
             "high_risk_count": sum(1 for r in results if r["prediction"] == "Churn"),
-            "data": results[:100] # Return top 100 for batch
+            "data": results[:100]  # Return top 100 for batch
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Batch processing error: {str(e)}")
+        logger.error("Batch prediction failed", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred during batch processing.")
 
 @app.post("/api/send-email")
 async def send_retention_email(request: EmailRequest):
@@ -408,18 +449,17 @@ async def send_retention_email(request: EmailRequest):
         msg['Subject'] = request.subject
         msg.attach(MIMEText(request.body, 'plain'))
 
-        # Connect and send
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(SENDER_EMAIL, APP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
+        # Use SMTP as a context manager to guarantee connection is closed
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(SENDER_EMAIL, APP_PASSWORD)
+            server.send_message(msg)
 
         return {"status": "success", "message": f"Email sent to {request.recipient_email}"}
-    
+
     except Exception as e:
-        print(f"SMTP Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Email delivery failed: {str(e)}")
+        logger.error("SMTP email delivery failed", exc_info=True)
+        raise HTTPException(status_code=500, detail="Email delivery failed. Please try again later.")
 
 
 # Triggered for CodeRabbit Code Review
