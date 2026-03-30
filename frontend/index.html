@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChurnSight AI | Customer Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-card: #181b21;
+            --bg-input: #0a0b0d;
+            --border: #2a2e36;
+            --border-focus: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --error: #ef4444;
+            --success: #22c55e;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+            --glow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(2ef444, 0.02), transparent 25%);
+        }
+
+        /* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(15, 17, 21, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--success);
+            background: rgba(34, 197, 94, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+
+        /* â”€â”€ Main Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        main {
+            flex: 1;
+            padding: 3rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .top-row {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .top-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* â”€â”€ Card Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+        }
+
+        .card-header {
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* â”€â”€ Form Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        select,
+        input {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+            appearance: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 1px var(--border-focus);
+        }
+
+        button.run-model-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 1rem;
+            box-shadow: var(--glow);
+        }
+
+        button.run-model-btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+        }
+
+        button.run-model-btn:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* â”€â”€ Results Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .results-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: sticky;
+            top: 6rem;
+        }
+
+        .meter-container {
+            position: relative;
+            background: var(--bg-input);
+            border-radius: 50%;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+        }
+
+        .meter-circle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border-radius: 50%;
+            border: 8px solid var(--border);
+            border-top-color: transparent;
+            transform: rotate(-45deg);
+            transition: border-color 1s ease-out;
+        }
+
+        .meter-value-container {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .meter-percent {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            line-height: 1;
+            transition: color 1s ease;
+        }
+
+        .meter-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .risk-badge {
+            text-align: center;
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 1.1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            transition: all 0.5s ease;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .metric-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .ai-message {
+            background: rgba(59, 130, 246, 0.05);
+            border-left: 3px solid var(--accent);
+            padding: 1rem;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+        }
+
+        /* â”€â”€ Advanced AI Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .strategy-box {
+            background: rgba(34, 197, 94, 0.05);
+            border-left: 3px solid var(--success);
+            padding: 1rem;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-main);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .impact-list {
+            margin-top: 1.5rem;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .impact-header {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .impact-item {
+            display: grid;
+            grid-template-columns: 160px 1fr 45px;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .impact-bar-bg {
+            background: var(--bg-input);
+            height: 8px;
+            border-radius: 4px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .impact-bar-fill {
+            height: 100%;
+            background: var(--error);
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        /* â”€â”€ CLV Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .clv-card {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .clv-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.4), transparent);
+        }
+
+        .clv-amount {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            transition: color 0.5s ease;
+        }
+
+        .clv-tier-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        .clv-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .clv-priority {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* â”€â”€ Email Retention Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .email-retention-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed var(--border);
+            display: none; /* Shown when CLV is calculated */
+        }
+
+        .email-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .email-input {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 0.6rem 1rem;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .email-input:focus {
+            border-color: var(--accent);
+        }
+
+        .email-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .email-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .email-btn.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .email-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* â”€â”€ Modal Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .email-preview-body {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #d1d5db;
+            white-space: pre-wrap;
+        }
+
+        .template-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+            border: 1px solid #a855f7;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        /* â”€â”€ Loading State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .spinner {
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .spinner-sm {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* â”€â”€ What-If Simulator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .whatif-card {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid #2d3a2e;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+            margin-top: 0;
+        }
+
+        .whatif-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.5), transparent);
+        }
+
+        .whatif-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .whatif-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .whatif-control {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+        }
+
+        .whatif-control-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .whatif-toggle-group {
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .whatif-toggle {
+            flex: 1;
+            padding: 7px 6px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .whatif-toggle.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .whatif-slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .whatif-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border);
+            outline: none;
+        }
+
+        .whatif-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+        }
+
+        .whatif-result {
+            margin-top: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1rem 1.2rem;
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .whatif-prob-block {
+            text-align: center;
+        }
+
+        .whatif-prob-value {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .whatif-prob-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .whatif-arrow {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .whatif-delta {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .whatif-loading {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* â”€â”€ Section Dividers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .section-divider {
+            grid-column: 1 / -1;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* â”€â”€ Toast Notification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--error);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            transform: translateY(250%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <i data-lucide="brain-circuit" style="color: var(--accent)"></i>
+            ChurnSight AI
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <a href="batch.html" class="nav-link"
+                style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;"><i
+                    data-lucide="upload-cloud"></i> Batch Mode</a>
+            <div class="status-badge" id="api-status">
+                <div class="status-dot"></div>
+                Checking API routing...
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="top-row">
+            <!-- Data Entry Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i data-lucide="database"></i> Customer Telemetry</h2>
+                    <p class="card-desc">Input customer profile to feed the CatBoost stacking ensemble.</p>
+                </div>
+
+                <form id="predict-form">
+
+                    <div class="section-divider">Demographics</div>
+
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="Female">Female</option>
+                            <option value="Male">Male</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Senior Citizen</label>
+                        <select name="SeniorCitizen">
+                            <option value="0">No (0)</option>
+                            <option value="1">Yes (1)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Partner</label>
+                        <select name="Partner">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Dependents</label>
+                        <select name="Dependents">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="section-divider">Account Metrics</div>
+
+                    <div class="form-group">
+                        <label>Tenure (Months)</label>
+                        <input type="number" name="tenure" value="12" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contract Type</label>
+                        <select name="Contract">
+                            <option value="Month-to-month">Month-to-month</option>
+                            <option value="One year">One year</option>
+                            <option value="Two year">Two year</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Paperless Billing</label>
+                        <select name="PaperlessBilling">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select name="PaymentMethod">
+                            <option value="Electronic check">Electronic check</option>
+                            <option value="Mailed check">Mailed check</option>
+                            <option value="Bank transfer (automatic)">Bank transfer (auto)</option>
+                            <option value="Credit card (automatic)">Credit card (auto)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Charges ($)</label>
+                        <input type="number" name="MonthlyCharges" value="89.50" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Total Charges ($)</label>
+                        <input type="number" name="TotalCharges" value="1074.00" step="0.01" required>
+                    </div>
+
+                    <div class="section-divider">Services Details</div>
+
+                    <div class="form-group">
+                        <label>Phone Service</label>
+                        <select name="PhoneService">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Multiple Lines</label>
+                        <select name="MultipleLines">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No phone service">No phone service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Internet Service</label>
+                        <select name="InternetService">
+                            <option value="Fiber optic">Fiber optic</option>
+                            <option value="DSL">DSL</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Online Security</label>
+                        <select name="OnlineSecurity">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Online Backup</label>
+                        <select name="OnlineBackup">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Device Protection</label>
+                        <select name="DeviceProtection">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tech Support</label>
+                        <select name="TechSupport">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Streaming TV</label>
+                        <select name="StreamingTV">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Streaming Movies</label>
+                        <select name="StreamingMovies">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <button type="submit" class="run-model-btn" id="submit-btn" disabled>
+                            <i data-lucide="loader-2" class="spinner" id="spinner"></i>
+                            <span>Run Inference</span>
+                            <i data-lucide="arrow-right" id="arrow-icon"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Dashboard Panel -->
+            <div class="results-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i data-lucide="activity"></i> Inference Output</h2>
+                        <p class="card-desc">Model confidence and risk classification.</p>
+                    </div>
+
+                    <div class="meter-container">
+                        <div class="meter-circle" id="meter-ring"></div>
+                        <div class="meter-value-container">
+                            <div class="meter-percent" id="prob-display">--%</div>
+                            <div class="meter-label">Churn Probability</div>
+                        </div>
+                    </div>
+
+                    <div class="risk-badge" id="risk-badge">
+                        Awaiting Data...
+                    </div>
+
+                    <div class="ai-message" id="ai-message">
+                        Fill out the telemetry form and run inference to see the AI's classification.
+                    </div>
+
+                    <div class="strategy-box" id="strategy-box">
+                        <strong>AI Recommended Action:</strong> <span id="strategy-text"></span>
+                    </div>
+
+                    <div class="impact-list" id="impact-list">
+                        <div class="impact-header"><i data-lucide="bar-chart-2"></i> Top Churn Drivers</div>
+                        <div id="impacts-container"></div>
+                    </div>
+                </div>
+
+                <!-- CLV Card -->
+                <div class="clv-card" id="clv-card">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+                        <i data-lucide="trending-up" style="color: #a855f7"></i>
+                        <div>
+                            <div
+                                style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">
+                                Customer Lifetime Value</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Predicted future revenue if
+                                retained
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clv-amount" id="clv-amount">$0</div>
+                    <div><span class="clv-tier-badge" id="clv-tier">"“</span></div>
+                    <div class="clv-desc" id="clv-desc"></div>
+                    <div class="clv-priority" id="clv-priority"></div>
+
+                    <!-- Email Retention Section -->
+                    <div class="email-retention-section" id="email-retention-section">
+                        <div
+                            style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px;">
+                            Personalized Retention Email</div>
+                        <div class="email-input-group">
+                            <input type="email" class="email-input" id="retention-email"
+                                placeholder="customer@example.com">
+                        </div>
+                        <div class="email-input-group">
+                            <button class="email-btn secondary" onclick="previewEmail()">
+                                <i data-lucide="eye" style="width:14px; height:14px;"></i>
+                                Preview
+                            </button>
+                            <button class="email-btn" onclick="sendRetentionEmail()">
+                                <i data-lucide="send" style="width:14px; height:14px;"></i>
+                                Send Email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- end .top-row -->
+
+        <!-- Email Preview Modal -->
+        <div class="modal-overlay" id="email-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i data-lucide="mail" style="color:var(--accent)"></i>
+                        Email Preview
+                    </h3>
+                    <button class="modal-close" onclick="closeModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div id="email-template-tag" class="template-tag">Standard Template</div>
+                <div class="email-preview-body" id="email-preview-body">
+                    <!-- Dynamic content will be injected here -->
+                </div>
+                <div style="margin-top:2rem; display:flex; justify-content:flex-end;">
+                    <button class="email-btn" onclick="sendRetentionEmail()">
+                        <i data-lucide="send" style="width:14px; height:14px;"></i>
+                        Looks Good, Send Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- What-If Simulator "” full-width row below the 2-column top section -->
+        <div class="whatif-card" id="whatif-card">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i data-lucide="sliders-horizontal" style="color: var(--success)"></i>
+                    <div>
+                        <div style="font-size:0.9rem; font-weight:600; color:#fff;">What-If Simulator</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">Adjust risk factors and see the
+                            churn probability change instantly</div>
+                    </div>
+                </div>
+                <div class="whatif-loading" id="whatif-loading">
+                    <i data-lucide="loader-2" style="animation: spin 1s linear infinite; width:14px; height:14px;"></i>
+                    Simulating...
+                </div>
+            </div>
+
+            <div class="whatif-controls">
+                <!-- Contract Type -->
+                <div class="whatif-control">
+                    <div class="whatif-control-label">Ÿ“„ Contract Type</div>
+                    <div class="whatif-toggle-group" id="wif-contract">
+                        <button class="whatif-toggle" data-value="Month-to-month"
+                            onclick="setToggle('wif-contract', this)">Monthly</button>
+                        <button class="whatif-toggle" data-value="One year" onclick="setToggle('wif-contract', this)">1
+                            Year</button>
+                        <button class="whatif-toggle" data-value="Two year" onclick="setToggle('wif-contract', this)">2
+                            Years</button>
+                    </div>
+                </div>
+
+                <!-- Internet Service -->
+                <div class="whatif-control">
+                    <div class="whatif-control-label">ŸŒ Internet Service</div>
+                    <div class="whatif-toggle-group" id="wif-internet">
+                        <button class="whatif-toggle" data-value="Fiber optic"
+                            onclick="setToggle('wif-internet', this)">Fiber</button>
+                        <button class="whatif-toggle" data-value="DSL"
+                            onclick="setToggle('wif-internet', this)">DSL</button>
+                        <button class="whatif-toggle" data-value="No"
+                            onclick="setToggle('wif-internet', this)">None</button>
+                    </div>
+                </div>
+
+                <!-- Monthly Bill Slider -->
+                <div class="whatif-control">
+                    <div class="whatif-control-label">Ÿ’µ Monthly Bill: <span id="wif-bill-label">No change</span>
+                    </div>
+                    <div class="whatif-slider-wrap">
+                        <span style="font-size:0.75rem; color:var(--text-muted);">-40%</span>
+                        <input type="range" class="whatif-slider" id="wif-bill" min="-40" max="0" value="0" step="5"
+                            oninput="onBillSlider(this)">
+                        <span style="font-size:0.75rem; color:var(--text-muted);">0%</span>
+                    </div>
+                </div>
+
+                <!-- Tech Support -->
+                <div class="whatif-control">
+                    <div class="whatif-control-label">Ÿ› ï¸ Tech Support</div>
+                    <div class="whatif-toggle-group" id="wif-tech">
+                        <button class="whatif-toggle" data-value="No" onclick="setToggle('wif-tech', this)">No</button>
+                        <button class="whatif-toggle" data-value="Yes"
+                            onclick="setToggle('wif-tech', this)">Yes</button>
+                        <button class="whatif-toggle" data-value="No internet service"
+                            onclick="setToggle('wif-tech', this)">N/A</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Row -->
+            <div class="whatif-result" id="whatif-result" style="display:none;">
+                <div class="whatif-prob-block">
+                    <div class="whatif-prob-value" id="wif-original-prob" style="color: var(--error);">--%</div>
+                    <div class="whatif-prob-label">Original Risk</div>
+                </div>
+                <div class="whatif-arrow">â†’</div>
+                <div class="whatif-prob-block">
+                    <div class="whatif-prob-value" id="wif-new-prob" style="color: var(--success);">--%</div>
+                    <div class="whatif-prob-label">Simulated Risk</div>
+                </div>
+                <div class="whatif-delta" id="wif-delta">"“</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Error Toast -->
+    <div class="toast" id="toast">
+        <i data-lucide="alert-triangle"></i>
+        <span id="toast-msg">Error connecting to server.</span>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // DOM Elements
+        const form = document.getElementById('predict-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const spinner = document.getElementById('spinner');
+        const arrowIcon = document.getElementById('arrow-icon');
+        const probDisplay = document.getElementById('prob-display');
+        const meterRing = document.getElementById('meter-ring');
+        const riskBadge = document.getElementById('risk-badge');
+        const aiMessage = document.getElementById('ai-message');
+        const strategyBox = document.getElementById('strategy-box');
+        const strategyText = document.getElementById('strategy-text');
+        const impactList = document.getElementById('impact-list');
+        const impactsContainer = document.getElementById('impacts-container');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-msg');
+
+        // What-If Simulator state
+        let lastFormData = null;
+        let originalProbability = null;
+        let whatIfDebounce = null;
+        let lastResult = null; // Store for email preview
+
+        // Determine API URL (Local vs Vercel)
+        // If running locally or opened from file system, fallback to localhost:8000
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+        const API_BASE = isLocalhost ? 'http://localhost:8000' : '';
+
+        // Health Check on load
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_BASE}/api/health`, { method: 'GET' });
+                if (res.ok) {
+                    const data = await res.json();
+                    submitBtn.disabled = false;
+                    document.getElementById('api-status').innerHTML = '<div class="status-dot tooltip" style="background-color: var(--success); box-shadow: 0 0 8px var(--success);"></div><span style="color: var(--success)">API Routing Valid</span>';
+                    toast.classList.remove('show'); // Explicitly hide any stuck error toast
+                } else {
+                    showToast("API Server returned error status.");
+                }
+            } catch (error) {
+                console.warn("FastAPI Server not explicitly found, assuming Vercel Serverless routing if disabled locally.");
+                // If it fails locally, the user likely hasn't started uvicorn. Show toast.
+                if (isLocalhost) {
+                    showToast("Local API server offline. Run `uvicorn api.predict:app --reload`.");
+                } else {
+                    // On Vercel, allow form submit and hope routing works.
+                    submitBtn.disabled = false;
+                }
+            }
+        }
+
+        // Show Error Toast
+        function showToast(message) {
+            toastMsg.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        // Handle Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // UI Loading state
+            submitBtn.disabled = true;
+            spinner.style.display = 'block';
+            arrowIcon.style.display = 'none';
+            probDisplay.style.color = 'var(--text-muted)';
+            meterRing.style.borderColor = 'transparent';
+            strategyBox.style.display = 'none';
+            impactList.style.display = 'none';
+
+            // Gather Data
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Convert numerical inputs
+            data.SeniorCitizen = parseInt(data.SeniorCitizen);
+            data.tenure = parseInt(data.tenure);
+            data.MonthlyCharges = parseFloat(data.MonthlyCharges);
+            data.TotalCharges = parseFloat(data.TotalCharges);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) throw new Error("Inference failed.");
+
+                const result = await res.json();
+
+                // Store form data for What-If Simulator (MUST be before updateDashboard)
+                lastFormData = { ...data };
+
+                // Update UI visually
+                updateDashboard(result);
+
+            } catch (error) {
+                console.error(error);
+                showToast("Inference Error. Check console or API server state.");
+                probDisplay.textContent = "ERR";
+            } finally {
+                // Restore button
+                submitBtn.disabled = false;
+                spinner.style.display = 'none';
+                arrowIcon.style.display = 'block';
+            }
+        });
+
+        // Update Dashboard Animation & UI
+        function updateDashboard(result) {
+            lastResult = result; // Store for other UI components like Email Preview
+            const prob = (result.probability * 100).toFixed(1);
+
+            // Animate numbers
+            let current = 0;
+            const target = parseFloat(prob);
+            const step = target / 30; // 30 frames
+
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+
+                    // Set final colors
+                    probDisplay.style.color = result.colorCode;
+                    meterRing.style.borderTopColor = result.colorCode;
+                    meterRing.style.borderRightColor = result.colorCode;
+
+                    if (result.probability > 0.5) meterRing.style.borderBottomColor = result.colorCode;
+                    if (result.probability > 0.8) meterRing.style.borderLeftColor = result.colorCode;
+
+                    riskBadge.textContent = result.risk_level;
+                    riskBadge.style.color = result.colorCode;
+                    riskBadge.style.borderColor = result.colorCode;
+                    riskBadge.style.background = `rgba(${hexToRgb(result.colorCode)}, 0.1)`;
+                }
+                probDisplay.textContent = current.toFixed(1) + "%";
+            }, 16);
+
+            aiMessage.innerHTML = `<strong>Diagnostic Result:</strong> ${result.message} <br> Threshold: >= ${result.threshold}`;
+
+            // Render Strategy
+            if (result.retention_strategy) {
+                strategyText.textContent = result.retention_strategy.replace("Ÿ”¥ AI Recommended Action: ", "");
+                strategyBox.style.display = 'block';
+                if (result.prediction === "Retain") {
+                    strategyBox.style.borderLeftColor = "var(--success)";
+                    strategyBox.style.background = "rgba(34, 197, 94, 0.05)";
+                } else {
+                    strategyBox.style.borderLeftColor = "var(--accent)";
+                    strategyBox.style.background = "rgba(59, 130, 246, 0.05)";
+                }
+            }
+
+            // Render Impacts
+            if (result.impacts && result.impacts.length > 0) {
+                impactList.style.display = 'flex';
+                impactsContainer.innerHTML = '';
+
+                result.impacts.forEach(impact => {
+                    const row = document.createElement('div');
+                    row.className = 'impact-item';
+
+                    const labelContainer = document.createElement('div');
+                    labelContainer.style.display = 'flex';
+                    labelContainer.style.flexDirection = 'column';
+
+                    const label = document.createElement('div');
+                    label.textContent = impact.feature;
+                    label.style.color = 'var(--text-main)';
+                    label.style.fontWeight = '500';
+
+                    const reason = document.createElement('div');
+                    if (impact.reason) {
+                        reason.textContent = impact.reason;
+                    } else {
+                        reason.textContent = "Affects customer churn profile.";
+                    }
+                    reason.style.fontSize = '0.7rem';
+                    reason.style.color = 'var(--text-muted)';
+                    reason.style.marginTop = '4px';
+                    reason.style.lineHeight = '1.3';
+
+                    labelContainer.appendChild(label);
+                    labelContainer.appendChild(reason);
+
+                    const barBg = document.createElement('div');
+                    barBg.className = 'impact-bar-bg';
+                    const barFill = document.createElement('div');
+                    barFill.className = 'impact-bar-fill';
+
+                    // Normalize width (max 40% for visual scale)
+                    const w = Math.min((impact.impact_percentage / 40) * 100, 100);
+                    barFill.style.width = '0%';
+                    setTimeout(() => barFill.style.width = w + '%', 100);
+
+                    barBg.appendChild(barFill);
+
+                    const val = document.createElement('div');
+                    val.textContent = '+' + impact.impact_percentage + '%';
+                    val.style.fontWeight = '600';
+                    val.style.color = 'var(--error)';
+
+                    row.appendChild(labelContainer);
+                    row.appendChild(barBg);
+                    row.appendChild(val);
+                    impactsContainer.appendChild(row);
+                });
+            }
+
+            // Render CLV Card
+            const clvCard = document.getElementById('clv-card');
+            const clvAmount = document.getElementById('clv-amount');
+            const clvTier = document.getElementById('clv-tier');
+            const clvDesc = document.getElementById('clv-desc');
+            const clvPriority = document.getElementById('clv-priority');
+
+            if (result.clv) {
+                const clv = result.clv;
+                const clvFormatted = '$' + clv.predicted_clv.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+                clvCard.style.display = 'block';
+                clvAmount.textContent = clvFormatted;
+                clvAmount.style.color = clv.color;
+
+                clvTier.textContent = clv.tier;
+                clvTier.style.color = clv.color;
+                clvTier.style.background = `rgba(${hexToRgb(clv.color)}, 0.15)`;
+                clvTier.style.border = `1px solid rgba(${hexToRgb(clv.color)}, 0.4)`;
+
+                // Human-readable description
+                const tierDescriptions = {
+                    'VIP': 'This is a VIP customer worth protecting at all costs. Their future subscription revenue is extremely high.',
+                    'High Value': 'This is a high-value customer. Invest significantly in retention efforts "” the return is well worth it.',
+                    'Standard': 'This is a standard-value customer. A moderate retention effort is recommended.',
+                    'Low Value': 'This customer has a low predicted lifetime value. Prioritize higher-value customers for active retention calls.'
+                };
+                clvDesc.textContent = tierDescriptions[clv.tier] || 'Predicted future revenue estimate based on historical patterns.';
+
+                // Save Priority guidance
+                const isChurning = result.prediction === 'Churn';
+                let priorityText, priorityBg, priorityColor;
+                if (isChurning && clv.tier === 'VIP') {
+                    priorityText = 'Ÿ”´ URGENT: Drop everything. Call this customer NOW.';
+                    priorityBg = 'rgba(239,68,68,0.1)'; priorityColor = '#ef4444';
+                } else if (isChurning && clv.tier === 'High Value') {
+                    priorityText = 'ŸŸ  HIGH PRIORITY: Offer a retention discount immediately.';
+                    priorityBg = 'rgba(249,115,22,0.1)'; priorityColor = '#f97316';
+                } else if (isChurning && clv.tier === 'Standard') {
+                    priorityText = '🟡 MEDIUM PRIORITY: Send a targeted retention email.';
+                    priorityBg = 'rgba(234,179,8,0.1)'; priorityColor = '#eab308';
+                } else if (isChurning) {
+                    priorityText = 'âšª LOW PRIORITY: Send a basic retention email.';
+                    priorityBg = 'rgba(107,114,128,0.1)'; priorityColor = '#6b7280';
+                } else {
+                    priorityText = '✅ RETAINED: Keep this customer happy with proactive check-ins.';
+                    priorityBg = 'rgba(34,197,94,0.1)'; priorityColor = '#22c55e';
+                }
+                clvPriority.textContent = priorityText;
+                clvPriority.style.background = priorityBg;
+                clvPriority.style.color = priorityColor;
+                clvPriority.style.border = `1px solid ${priorityColor}`;
+
+                // Show Email Retention Section
+                document.getElementById('email-retention-section').style.display = 'block';
+                lucide.createIcons();
+            } else {
+                clvCard.style.display = 'none';
+                document.getElementById('email-retention-section').style.display = 'none';
+            }
+
+            // Initialize What-If Simulator
+            originalProbability = result.probability;
+            const whatifCard = document.getElementById('whatif-card');
+            whatifCard.style.display = 'block';
+
+            // Reset simulator controls to match current form values
+            document.getElementById('wif-bill').value = 0;
+            document.getElementById('wif-bill-label').textContent = 'No change';
+            document.getElementById('wif-bill-label').style.color = 'var(--text-muted)';
+
+            // Sync contract toggle
+            const currentContract = lastFormData ? lastFormData.Contract : null;
+            document.querySelectorAll('#wif-contract .whatif-toggle').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === currentContract);
+            });
+
+            // Sync internet toggle
+            const currentInternet = lastFormData ? lastFormData.InternetService : null;
+            document.querySelectorAll('#wif-internet .whatif-toggle').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === currentInternet);
+            });
+
+            // Sync tech support toggle
+            const currentTech = lastFormData ? lastFormData.TechSupport : null;
+            document.querySelectorAll('#wif-tech .whatif-toggle').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === currentTech);
+            });
+
+            // Hide old result row until user interacts
+            document.getElementById('whatif-result').style.display = 'none';
+            lucide.createIcons();
+        }
+
+        // Helper
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ?
+                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+                : '255,255,255';
+        }
+
+        // â”€â”€ What-If Simulator Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        function setToggle(groupId, clickedBtn) {
+            const group = document.getElementById(groupId);
+            group.querySelectorAll('.whatif-toggle').forEach(b => b.classList.remove('active'));
+            clickedBtn.classList.add('active');
+            scheduleWhatIf();
+        }
+
+        function onBillSlider(el) {
+            const pct = parseInt(el.value);
+            const label = document.getElementById('wif-bill-label');
+            label.textContent = pct === 0 ? 'No change' : `Reduce by ${Math.abs(pct)}%`;
+            label.style.color = pct < 0 ? 'var(--success)' : 'var(--text-muted)';
+            scheduleWhatIf();
+        }
+
+        function scheduleWhatIf() {
+            clearTimeout(whatIfDebounce);
+            whatIfDebounce = setTimeout(runWhatIf, 400);
+        }
+
+        async function runWhatIf() {
+            if (!lastFormData) return;
+
+            // Build simulated payload by overlaying simulator values
+            const simData = { ...lastFormData };
+
+            // Contract toggle
+            const contractActive = document.querySelector('#wif-contract .whatif-toggle.active');
+            if (contractActive) simData.Contract = contractActive.dataset.value;
+
+            // Internet toggle
+            const internetActive = document.querySelector('#wif-internet .whatif-toggle.active');
+            if (internetActive) simData.InternetService = internetActive.dataset.value;
+
+            // Tech support toggle
+            const techActive = document.querySelector('#wif-tech .whatif-toggle.active');
+            if (techActive) simData.TechSupport = techActive.dataset.value;
+
+            // Bill slider
+            const billPct = parseInt(document.getElementById('wif-bill').value);
+            if (billPct < 0) {
+                const origBill = lastFormData.MonthlyCharges;
+                simData.MonthlyCharges = parseFloat((origBill * (1 + billPct / 100)).toFixed(2));
+            }
+
+            // Show loading
+            const loadingEl = document.getElementById('whatif-loading');
+            loadingEl.style.display = 'flex';
+            lucide.createIcons();
+
+            try {
+                const res = await fetch(`${API_BASE}/api/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(simData)
+                });
+
+                if (!res.ok) return;
+
+                const result = await res.json();
+                const newProb = parseFloat((result.probability * 100).toFixed(1));
+                const origProb = parseFloat((originalProbability * 100).toFixed(1));
+                const delta = (newProb - origProb).toFixed(1);
+
+                document.getElementById('wif-original-prob').textContent = origProb + '%';
+                document.getElementById('wif-new-prob').textContent = newProb + '%';
+                document.getElementById('wif-new-prob').style.color = newProb < origProb ? 'var(--success)' : 'var(--error)';
+
+                const deltaEl = document.getElementById('wif-delta');
+                if (delta < 0) {
+                    deltaEl.textContent = `⬇ ${Math.abs(delta)}% reduction in churn risk!`;
+                    deltaEl.style.background = 'rgba(34,197,94,0.1)';
+                    deltaEl.style.color = 'var(--success)';
+                    deltaEl.style.border = '1px solid var(--success)';
+                } else if (delta > 0) {
+                    deltaEl.textContent = `⬆ ${delta}% increase in churn risk`;
+                    deltaEl.style.background = 'rgba(239,68,68,0.1)';
+                    deltaEl.style.color = 'var(--error)';
+                    deltaEl.style.border = '1px solid var(--error)';
+                } else {
+                    deltaEl.textContent = 'No change in churn risk';
+                    deltaEl.style.background = 'rgba(107,114,128,0.1)';
+                    deltaEl.style.color = 'var(--text-muted)';
+                    deltaEl.style.border = '1px solid var(--border)';
+                }
+
+                document.getElementById('whatif-result').style.display = 'flex';
+            } catch (e) {
+                console.warn('What-If simulation failed:', e);
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        // -- Email Retention Functions -----------------------------------
+        let currentEmailContent = "";
+
+        function generateEmailContent(result) {
+            const impacts = result.impacts || [];
+            const clvTier = result.clv ? result.clv.tier : "Standard";
+            const topReason = impacts.length > 0 ? impacts[0].feature : "General Retention";
+
+            const SIGN_OFF = `Warm regards,
+The ChurnSight AI Customer Success Team`;
+
+            let templateTag = "Standard Retention";
+            let body = `Subject: A note from the ChurnSight AI Customer Success Team
+
+Dear Valued Customer,
+
+We hope this message finds you well. We are reaching out today because your experience with ChurnSight AI is extremely important to us, and we want to ensure you are receiving the full value of your subscription.
+
+We would love the opportunity to personally connect with you to:
+  - Review your current plan and ensure it fits your needs
+  - Demonstrate any new features you may not have explored yet
+  - Address any questions, concerns, or feedback you may have
+
+As a gesture of appreciation for your continued loyalty, we are pleased to offer you a complimentary 30-day service extension, applied automatically to your account. No action is required on your part.
+
+We look forward to continuing to support your goals.
+
+${SIGN_OFF}`;
+
+            if (topReason.includes("Bill") || topReason.includes("Charges")) {
+                templateTag = "Price Sensitivity - Loyalty Discount";
+                body = `Subject: An exclusive offer for you - 15% off your next 6 months
+
+Dear Valued Customer,
+
+We are writing to you today because we deeply value your continued partnership and want to ensure our service delivers exceptional value for your investment.
+
+We understand that managing costs is a priority, and we want to demonstrate our commitment to being a long-term partner you can count on. As a token of our appreciation for your loyalty, we are pleased to extend the following exclusive offer:
+
+[OFFER] 15% DISCOUNT on your Monthly Charges, applied across the next 6 consecutive billing cycles.
+
+This offer is reserved exclusively for our most valued customers and will be applied to your account automatically upon your confirmation. To lock in this offer before it expires, simply reply to this email with "YES - Apply Discount" and our billing team will process it within 24 hours.
+
+We are committed to ensuring that ChurnSight AI remains the most valuable tool in your organisation.
+
+${SIGN_OFF}`;
+
+            } else if (topReason.includes("Contract")) {
+                templateTag = "Contract Upgrade - Loyalty Bonus";
+                body = `Subject: A special Loyalty Bonus reserved for you - Free month inside
+
+Dear Valued Customer,
+
+We are reaching out today with a time-sensitive, exclusive opportunity that has been reserved specifically for a select group of our most loyal customers.
+
+Our records indicate that you are currently on our flexible month-to-month plan. While this arrangement offers great flexibility, we would love to offer you the additional benefits that come with a longer-term commitment at a significantly better rate.
+
+We would like to extend the following exclusive Loyalty Bundle to your account:
+
+[OFFER 1] 1 FREE MONTH of service, applied immediately upon contract upgrade
+[OFFER 2] LOCKED-IN pricing for 12 months, protecting you against future rate changes
+[OFFER 3] PRIORITY support queue, ensuring your tickets are always fast-tracked
+
+This offer is valid for the next 7 days. To proceed, simply reply to this email and our team will handle everything seamlessly with zero disruption to your current services.
+
+${SIGN_OFF}`;
+
+            } else if (topReason.includes("Support") || topReason.includes("Security")) {
+                templateTag = "Technical Support - Priority Access";
+                body = `Subject: Your account has been upgraded to Priority Technical Support
+
+Dear Valued Customer,
+
+We are writing with an important update regarding your account.
+
+After reviewing your service history, our team wants to ensure that your technical environment is fully optimised and that you are supported at the highest level. Effective immediately, we have provisioned the following benefits to your account at no additional charge:
+
+[UPGRADE] 3-MONTH FREE TRIAL of Premium Technical Support, including:
+  - A dedicated Technical Account Manager (TAM) assigned to your account
+  - Priority response SLA: Under 2 hours for all critical issues
+  - Proactive security monitoring and quarterly account review sessions
+  - Access to our private engineering channel for feature requests
+
+Our team of senior support engineers is ready to schedule a complimentary technical audit of your setup. To activate your upgrade and schedule the audit, please reply to this email at your earliest convenience. This offer is active for the next 14 days.
+
+${SIGN_OFF}`;
+            }
+
+            if (clvTier === 'VIP') {
+                templateTag = "VIP White-Glove Outreach";
+                body = `Subject: An important message from ChurnSight AI - VIP Programme Invitation
+
+Dear Valued Partner,
+
+Your account represents one of our most important strategic partnerships, and your continued trust in our platform is something we do not take for granted.
+
+We are writing to inform you that your account has been elevated to our exclusive White-Glove VIP Programme, which includes the following benefits effective immediately:
+
+[VIP 1] 20% PERMANENT DISCOUNT on your subscription, with no expiry date
+[VIP 2] DEDICATED ACCOUNT MANAGER, a senior team member available directly to you
+[VIP 3] QUARTERLY EXECUTIVE BRIEFINGS, private sessions on our product roadmap
+[VIP 4] FIRST ACCESS to all new features before public release
+[VIP 5] CUSTOM SLA, negotiated specifically for your business requirements
+
+We would love to schedule a brief call at your convenience to walk you through the programme and ensure everything is set up to your satisfaction. Please reply to this email and our team will coordinate a time that works for you.
+
+${SIGN_OFF}`;
+            }
+
+            currentEmailContent = body;
+            return { templateTag, body };
+        }
+
+
+                function previewEmail() {
+            if (!lastResult) return;
+            const { templateTag, body } = generateEmailContent(lastResult);
+
+            document.getElementById('email-template-tag').textContent = templateTag;
+
+            // Render Subject line bold, rest as plain text
+            const lines = body.split('\n');
+            const subjectLine = lines[0]; // "Subject: ..."
+            const restOfEmail = lines.slice(1).join('\n');
+            const previewEl = document.getElementById('email-preview-body');
+            previewEl.innerHTML = `<strong style="font-size:1rem;">${subjectLine}</strong>\n${restOfEmail.replace(/\n/g, '<br>')}`;
+
+            document.getElementById('email-modal').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+
+        function closeModal() {
+            document.getElementById('email-modal').style.display = 'none';
+        }
+
+        async function sendRetentionEmail() {
+            const email = document.getElementById('retention-email').value;
+            if (!email || !email.includes('@')) {
+                showToast("Please enter a valid email address.");
+                return;
+            }
+
+            if (!lastResult) return;
+            const { templateTag, body: emailBody } = generateEmailContent(lastResult);
+
+            // Parse subject and body content from the email template
+            const emailLines = emailBody.split("\n");
+            const emailSubject = emailLines[0].replace("Subject: ", "");
+            const emailContent = emailLines.slice(2).join("\n");
+
+            // UI Feedback
+            const sendBtn = document.querySelector('button[onclick="sendRetentionEmail()"]');
+            const originalHTML = sendBtn.innerHTML;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="spinner-sm"></i> Sending...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/send-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient_email: email,
+                        subject: emailSubject,
+                        body: emailContent
+                    })
+                });
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || "Delivery failed");
+                }
+
+                showToast(`Success! Retention email delivered to ${email}`);
+                closeModal();
+                document.getElementById('retention-email').value = '';
+            } catch (err) {
+                console.error(err);
+                showToast(`Error: ${err.message}`);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = originalHTML;
+            }
+        }
+
+        // Boot
+        checkHealth();
+
+    </script>
+</body>
+
+</html>
