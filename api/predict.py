@@ -421,3 +421,5 @@ async def send_retention_email(request: EmailRequest):
         print(f"SMTP Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Email delivery failed: {str(e)}")
 
+
+# Triggered for CodeRabbit Code Review

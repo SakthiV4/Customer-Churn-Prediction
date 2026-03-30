@@ -90,3 +90,5 @@ def preprocess(filepath: str):
     print(f"[preprocess] Final feature matrix: {X.shape}")
     print(f"[preprocess] Churn distribution: {y.value_counts().to_dict()}")
     return X, y
+
+# Triggered for CodeRabbit Code Review
