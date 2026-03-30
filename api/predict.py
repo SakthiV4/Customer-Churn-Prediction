@@ -3,9 +3,11 @@ import io
 import sys
 import joblib
 import logging
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
 import pandas as pd
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
@@ -13,7 +15,7 @@ from pydantic import BaseModel, EmailStr, Field
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import List
+from typing import List, Literal
 
 # ── Logging Setup ─────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -47,9 +49,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Setup Rate Limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(429, _rate_limit_exceeded_handler)
+
 # Allow CORS — enumerate explicit origins, not wildcard
 ALLOWED_ORIGINS = [
-    os.environ.get("FRONTEND_URL", "http://localhost:8000"),
+    os.environ.get("FRONTEND_URL", "https://your-domain.vercel.app"),
     "http://localhost:3000",
     "http://127.0.0.1:8000",
 ]
@@ -106,25 +113,28 @@ def load_model():
 
 # ── Pydantic Request Schema ───────────────────────────────────────────
 class CustomerData(BaseModel):
-    gender: str = Field(..., description="Male or Female", example="Female")
-    SeniorCitizen: int = Field(..., description="1 if senior citizen, 0 otherwise", example=0)
-    Partner: str = Field(..., example="No")
-    Dependents: str = Field(..., example="No")
-    tenure: int = Field(..., example=12)
-    PhoneService: str = Field(..., example="Yes")
-    MultipleLines: str = Field(..., example="No")
-    InternetService: str = Field(..., example="Fiber optic")
-    OnlineSecurity: str = Field(..., example="No")
-    OnlineBackup: str = Field(..., example="Yes")
-    DeviceProtection: str = Field(..., example="No")
-    TechSupport: str = Field(..., example="No")
-    StreamingTV: str = Field(..., example="Yes")
-    StreamingMovies: str = Field(..., example="No")
-    Contract: str = Field(..., example="Month-to-month")
-    PaperlessBilling: str = Field(..., example="Yes")
-    PaymentMethod: str = Field(..., example="Electronic check")
-    MonthlyCharges: float = Field(..., example=89.50)
-    TotalCharges: float = Field(..., example=1074.0)
+    gender: Literal["Male", "Female"]
+    SeniorCitizen: Literal[0, 1]
+    Partner: Literal["Yes", "No"]
+    Dependents: Literal["Yes", "No"]
+    tenure: int = Field(..., ge=0, le=100)
+    PhoneService: Literal["Yes", "No"]
+    MultipleLines: Literal["Yes", "No", "No phone service"]
+    InternetService: Literal["DSL", "Fiber optic", "No"]
+    OnlineSecurity: Literal["Yes", "No", "No internet service"]
+    OnlineBackup: Literal["Yes", "No", "No internet service"]
+    DeviceProtection: Literal["Yes", "No", "No internet service"]
+    TechSupport: Literal["Yes", "No", "No internet service"]
+    StreamingTV: Literal["Yes", "No", "No internet service"]
+    StreamingMovies: Literal["Yes", "No", "No internet service"]
+    Contract: Literal["Month-to-month", "One year", "Two year"]
+    PaperlessBilling: Literal["Yes", "No"]
+    PaymentMethod: Literal[
+        "Electronic check", "Mailed check",
+        "Bank transfer (automatic)", "Credit card (automatic)"
+    ]
+    MonthlyCharges: float = Field(..., ge=0, le=500)
+    TotalCharges: float = Field(..., ge=0, le=100000)
 
 
 class EmailRequest(BaseModel):
@@ -378,7 +388,8 @@ async def predict_churn_batch(file: UploadFile = File(...)):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Model is not loaded.")
 
-    if not file.filename.endswith('.csv'):
+    ALLOWED_MIME_TYPES = {"text/csv", "application/csv", "application/vnd.ms-excel", "application/octet-stream"}
+    if not file.filename.endswith('.csv') or file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Only CSV files are allowed.")
 
     # Guard against oversized uploads (DoS protection)
@@ -424,7 +435,8 @@ async def predict_churn_batch(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="An internal error occurred during batch processing.")
 
 @app.post("/api/send-email")
-async def send_retention_email(request: EmailRequest):
+@limiter.limit("5/minute")
+async def send_retention_email(request: Request, payload: EmailRequest):
     """
     Sends a real retention email using Gmail SMTP.
     Requires environment variables: SENDER_EMAIL and MAIL_APP_PASSWORD
@@ -445,9 +457,9 @@ async def send_retention_email(request: EmailRequest):
         # Create message
         msg = MIMEMultipart()
         msg['From'] = f"ChurnSight AI <{SENDER_EMAIL}>"
-        msg['To'] = request.recipient_email
-        msg['Subject'] = request.subject
-        msg.attach(MIMEText(request.body, 'plain'))
+        msg['To'] = payload.recipient_email
+        msg['Subject'] = payload.subject.replace('\r', '').replace('\n', '')
+        msg.attach(MIMEText(payload.body, 'plain'))
 
         # Use SMTP as a context manager to guarantee connection is closed
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
@@ -455,7 +467,7 @@ async def send_retention_email(request: EmailRequest):
             server.login(SENDER_EMAIL, APP_PASSWORD)
             server.send_message(msg)
 
-        return {"status": "success", "message": f"Email sent to {request.recipient_email}"}
+        return {"status": "success", "message": f"Email sent to {payload.recipient_email}"}
 
     except Exception as e:
         logger.error("SMTP email delivery failed", exc_info=True)

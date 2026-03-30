@@ -3,6 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' http://localhost:8000 https://your-domain.vercel.app;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChurnSight AI | Customer Intelligence</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1081,7 +1083,7 @@
                                 <i data-lucide="eye" style="width:14px; height:14px;"></i>
                                 Preview
                             </button>
-                            <button class="email-btn" onclick="sendRetentionEmail()">
+                            <button id="send-email-btn" class="email-btn" onclick="sendRetentionEmail()">
                                 <i data-lucide="send" style="width:14px; height:14px;"></i>
                                 Send Email
                             </button>
@@ -1108,7 +1110,7 @@
                     <!-- Dynamic content will be injected here -->
                 </div>
                 <div style="margin-top:2rem; display:flex; justify-content:flex-end;">
-                    <button class="email-btn" onclick="sendRetentionEmail()">
+                    <button id="send-email-btn" class="email-btn" onclick="sendRetentionEmail()">
                         <i data-lucide="send" style="width:14px; height:14px;"></i>
                         Looks Good, Send Now
                     </button>
@@ -1353,7 +1355,11 @@
                 probDisplay.textContent = current.toFixed(1) + "%";
             }, 16);
 
-            aiMessage.innerHTML = `<strong>Diagnostic Result:</strong> ${result.message} <br> Threshold: >= ${result.threshold}`;
+            aiMessage.textContent = '';
+            const strong = document.createElement('strong');
+            strong.textContent = 'Diagnostic Result: ';
+            aiMessage.appendChild(strong);
+            aiMessage.appendChild(document.createTextNode(`${result.message} — Threshold: >= ${result.threshold}`));
 
             // Render Strategy
             if (result.retention_strategy) {
@@ -1746,7 +1752,17 @@ ${SIGN_OFF}`;
             const subjectLine = lines[0]; // "Subject: ..."
             const restOfEmail = lines.slice(1).join('\n');
             const previewEl = document.getElementById('email-preview-body');
-            previewEl.innerHTML = `<strong style="font-size:1rem;">${subjectLine}</strong>\n${restOfEmail.replace(/\n/g, '<br>')}`;
+            previewEl.textContent = ''; // clear
+    const subjectEl = document.createElement('strong');
+    subjectEl.style.fontSize = '1rem';
+    subjectEl.textContent = subjectLine;
+    previewEl.appendChild(subjectEl);
+    
+    const restNode = document.createElement('div');
+    restNode.style.whiteSpace = 'pre-wrap';
+    restNode.style.marginTop = '10px';
+    restNode.textContent = restOfEmail;
+    previewEl.appendChild(restNode);
 
             document.getElementById('email-modal').style.display = 'flex';
             lucide.createIcons();
